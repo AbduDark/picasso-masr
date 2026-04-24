@@ -63,49 +63,53 @@ export default function Modal({
             aria-hidden="true"
           />
 
-          {/* Panel */}
-          <motion.div
-            key="modal"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby={title ? 'modal-title' : undefined}
-            initial={{ opacity: 0, scale: 0.95, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            transition={{ duration: 0.3, ease: [0.34, 1.56, 0.64, 1] }}
-            className={clsx(
-              'fixed z-50 inset-x-4 top-1/2 -translate-y-1/2 mx-auto',
-              'bg-bg-card border border-gold/30 rounded-2xl shadow-gold-lg',
-              'max-h-[90vh] overflow-y-auto',
-              sizeClasses[size],
-            )}
-          >
-            {/* Header */}
-            {(title || showCloseButton) && (
-              <div className="flex items-center justify-between p-6 border-b border-white/5">
-                {title && (
-                  <h2
-                    id="modal-title"
-                    className="text-xl font-bold text-text-cream font-ar"
-                  >
-                    {title}
-                  </h2>
-                )}
-                {showCloseButton && (
-                  <button
-                    onClick={onClose}
-                    className="p-2 rounded-lg text-text-secondary hover:text-text-cream hover:bg-white/5 transition-all duration-200 cursor-pointer"
-                    aria-label="إغلاق"
-                  >
-                    <X size={20} />
-                  </button>
-                )}
-              </div>
-            )}
+          {/* Flex overlay — centers the panel properly */}
+          <div className="fixed inset-0 z-50 flex items-center justify-center px-4 py-8 pointer-events-none">
+            {/* Panel */}
+            <motion.div
+              key="modal"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby={title ? 'modal-title' : undefined}
+              initial={{ opacity: 0, scale: 0.95, y: 16 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 16 }}
+              transition={{ duration: 0.25, ease: [0.34, 1.56, 0.64, 1] }}
+              className={clsx(
+                'relative w-full pointer-events-auto',
+                'bg-bg-card border border-gold/30 rounded-2xl shadow-gold-lg',
+                'max-h-[90vh] overflow-y-auto',
+                sizeClasses[size],
+              )}
+              onClick={e => e.stopPropagation()}
+            >
+              {/* Header */}
+              {(title || showCloseButton) && (
+                <div className="flex items-center justify-between p-6 border-b border-white/5 sticky top-0 bg-bg-card z-10 rounded-t-2xl">
+                  {title && (
+                    <h2
+                      id="modal-title"
+                      className="text-xl font-bold text-text-cream font-ar"
+                    >
+                      {title}
+                    </h2>
+                  )}
+                  {showCloseButton && (
+                    <button
+                      onClick={onClose}
+                      className="p-2 rounded-lg text-text-secondary hover:text-text-cream hover:bg-white/5 transition-all duration-200 cursor-pointer"
+                      aria-label="إغلاق"
+                    >
+                      <X size={20} />
+                    </button>
+                  )}
+                </div>
+              )}
 
-            {/* Body */}
-            <div className="p-6">{children}</div>
-          </motion.div>
+              {/* Body */}
+              <div className="p-6">{children}</div>
+            </motion.div>
+          </div>
         </>
       )}
     </AnimatePresence>

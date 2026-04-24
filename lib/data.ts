@@ -5,7 +5,6 @@
  */
 
 import { createClient } from '@/lib/supabase/server'
-import { SEED_PRODUCTS, SEED_TESTIMONIALS } from '@/lib/constants'
 
 // ─── Types ────────────────────────────────────────────
 export interface DBProduct {
@@ -68,13 +67,10 @@ export async function getFeaturedProducts(): Promise<DBProduct[]> {
       .order('created_at', { ascending: false })
       .limit(6)
 
-    if (error || !data || data.length === 0) {
-      // Fallback to seed data if DB is empty
-      return SEED_PRODUCTS.filter(p => p.is_featured).slice(0, 6) as unknown as DBProduct[]
-    }
-    return data
+    if (error) throw error
+    return data || []
   } catch {
-    return SEED_PRODUCTS.filter(p => p.is_featured).slice(0, 6) as unknown as DBProduct[]
+    return []
   }
 }
 
@@ -93,12 +89,10 @@ export async function getAllProducts(category?: string): Promise<DBProduct[]> {
     }
 
     const { data, error } = await query
-    if (error || !data || data.length === 0) {
-      return SEED_PRODUCTS as unknown as DBProduct[]
-    }
-    return data
+    if (error) throw error
+    return data || []
   } catch {
-    return SEED_PRODUCTS as unknown as DBProduct[]
+    return []
   }
 }
 
@@ -112,15 +106,10 @@ export async function getProductBySlug(slug: string): Promise<DBProduct | null> 
       .eq('slug', slug)
       .single()
 
-    if (error || !data) {
-      // Fallback to seed
-      const seed = SEED_PRODUCTS.find(p => p.slug === slug)
-      return seed as unknown as DBProduct | null
-    }
+    if (error || !data) return null
     return data
   } catch {
-    const seed = SEED_PRODUCTS.find(p => p.slug === slug)
-    return seed as unknown as DBProduct | null
+    return null
   }
 }
 
@@ -135,12 +124,10 @@ export async function getFeaturedTestimonials(): Promise<DBTestimonial[]> {
       .order('created_at', { ascending: false })
       .limit(8)
 
-    if (error || !data || data.length === 0) {
-      return SEED_TESTIMONIALS as unknown as DBTestimonial[]
-    }
-    return data
+    if (error) throw error
+    return data || []
   } catch {
-    return SEED_TESTIMONIALS as unknown as DBTestimonial[]
+    return []
   }
 }
 
