@@ -1,0 +1,107 @@
+name: 🚀 Deploy to Production
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:  # يسمح بالتشغيل اليدوي من GitHub UI
+
+concurrency:
+  group: production
+  cancel-in-progress: false  # لا تلغي deploy جارية
+
+jobs:
+  # ─────────────────────────────────────────────
+  # JOB 1: Lint + Type Check
+  # ─────────────────────────────────────────────
+  quality:
+    name: 🔍 Quality Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: TypeScript type check
+        run: npx tsc --noEmit
+
+      - name: ESLint
+        run: npm run lint
+
+  # ─────────────────────────────────────────────
+  # JOB 2: Build Check (ما يتنشرش لو البناء فشل)
+  # ─────────────────────────────────────────────
+  build:
+    name: 🔨 Build
+    runs-on: ubuntu-latest
+    needs: quality
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      NEXT_PUBLIC_SITE_URL: https://picasso-masr.com
+      NODE_ENV: production
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build Next.js app
+        run: npm run build
+
+      - name: ✅ Build succeeded
+        run: echo "Build passed!"
+
+  # ─────────────────────────────────────────────
+  # JOB 3: Deploy to VPS via SSH
+  # ─────────────────────────────────────────────
+  deploy:
+    name: 🌍 Deploy to picasso-masr.com
+    runs-on: ubuntu-latest
+    needs: build
+    environment:
+      name: production
+      url: https://picasso-masr.com
+
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SSH_PORT || 22 }}
+          script: |
+            set -e
+
+            echo "📦 Pulling latest code..."
+            cd /var/www/picasso-masr
+            git pull origin main
+
+            echo "📥 Installing dependencies..."
+            npm ci --production=false
+
+            echo "🔨 Building..."
+            npm run build
+
+            echo "🔄 Restarting PM2..."
+            pm2 restart picasso-masr --update-env
+
+            echo "✅ Deploy complete!"
+            pm2 status picasso-masr
